@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:to_do_app/model/todo_item.dart';
 import 'package:to_do_app/util/database_helper.dart';
+import 'package:to_do_app/util/date_formatter.dart';
 
 /**
  * Phan Nguyen
@@ -118,7 +119,7 @@ class ToDoScreenState extends State<ToDoScreen> {
 
   void _handleSubmit(String text) async {
     _textEditingController.clear();
-    ToDoItem toDoItem = new ToDoItem(text, DateTime.now().toIso8601String());
+    ToDoItem toDoItem = new ToDoItem(text,dateFormatted());
     int savedItemId = await db.saveItem(toDoItem);
     ToDoItem addedItem = await db.getItem(savedItemId);
     print("Item saved id $savedItemId");
@@ -134,4 +135,50 @@ class ToDoScreenState extends State<ToDoScreen> {
       _itemList.removeAt(index);
     });
   }
+
+  void _updateItem(ToDoItem item, int index){
+    var alert = new AlertDialog(
+      title: new Text("Update item"),
+      content: new Row(
+        children: <Widget>[
+          new Expanded(child: new TextField(
+            controller: _textEditingController,
+            autofocus: true,
+            decoration: new InputDecoration(
+              labelText: "Item",
+              hintText: "eg. Input item name",
+              icon: new Icon(Icons.update)
+            ),
+          ))
+        ],
+      ),
+      actions: <Widget>[
+        new FlatButton(onPressed: () async {
+          ToDoItem newItemUpdated = ToDoItem.fromMap({"itemName":_textEditingController.text,"dateCreated":dateFormatted(),"id":item.id});
+          _handleSubmittedUpdate(index,newItemUpdated);
+          await db.updateItem(newItemUpdated);
+          setState(() {
+            _readToDoList();
+          });
+          Navigator.pop(context);
+
+        }, child: new Text("Update")),
+        new FlatButton(onPressed: ()=> Navigator.pop(context),
+            child: new Text("Cancel"))
+      ],
+    );
+    showDialog(context:context,builder: (_){
+      return alert;
+    });
+  }
+
+  void _handleSubmittedUpdate(int index, ToDoItem item) {
+    setState(() {
+      _itemList.removeWhere((ele){
+        _itemList[index].itemName == item.itemName;
+      });
+    });
+  }
+
 }
+
